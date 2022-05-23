@@ -3,6 +3,7 @@ const Joi = require("joi");
 const app = express();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose');
 
 require("dotenv").config();
 if (!process.env.JWT_PRIVATE_KEY) {
@@ -11,6 +12,18 @@ if (!process.env.JWT_PRIVATE_KEY) {
   );
   process.exit(1);
 }
+
+mongoose.connect('mongodb://localhost:27017/node-api')
+  .then(() => console.log('Connected to mongo'))
+  .catch((err) => console.error('Pas pu se connecter,', err))
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  email: String,
+  motdepasse: Number
+});
+
+const User = mongoose.model('User', userSchema);
 
 const Collection = require("./Collection");
 const Tasks = new Collection("Tasks");
@@ -120,28 +133,44 @@ app.delete('/taches/:id', (req, res) => {
     }
 })
 
-// INSCRIPTION
+async function createUser(account) {
+    const user = new User(account);
+    try {
+        const result = await user.save()
+        return true;
+    } catch (exc) {
+        return false;
+    }
+}
+
 app.post("/signup", async (req, res) => {
-  const payload = req.body;
-  const schema = Joi.object({
-    username: Joi.string().min(3).max(50).required(),
-    email: Joi.string().max(255).required().email(),
-    motdepasse: Joi.string().min(3).max(50).required(),
-  });
+  
+    const payload = req.body;
+    const schema = Joi.object({
+        username: Joi.string().min(3).max(50).required(),
+        email: Joi.string().max(255).required().email(),
+        motdepasse: Joi.string().min(3).max(50).required(),
+    });
 
-  const { value: account, error } = schema.validate(payload);
-  if (error) return res.status(400).send({ erreur: error.details[0].message });
-  const { id, found } = Accounts.findByProperty("email", account.email);
-  if (found) return res.status(400).send("Please signin instead of signup");
-  const salt = await bcrypt.genSalt(10);
-  const passwordHashed = await bcrypt.hash(account.motdepasse, salt);
-  account.motdepasse = passwordHashed;
+    const { value: account, error } = schema.validate(payload);
+    if (error) return res.status(400).send({ erreur: error.details[0].message });
+    const { id, found } = Accounts.findByProperty("email", account.email);
+    if (found) return res.status(400).send("Please signin instead of signup");
+    const salt = await bcrypt.genSalt(10);
+    const passwordHashed = await bcrypt.hash(account.motdepasse, salt);
+    account.motdepasse = passwordHashed;
 
-  Accounts.insertOne(account);
-  res.status(201).json({
-    username: account.username,
-    email: account.email,
-  });
+    if (createUser(account)) {
+        res.status(201).json({
+            username: account.username,
+            email: account.email,
+        });
+    } else {
+        res.status(500).json({
+            message: "Le user n'a pas été créé"
+        });
+    }
+  
 });
 
 app.post("/signin", async (req, res) => {
