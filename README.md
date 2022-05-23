@@ -1,3 +1,3 @@
 # nodejs-evaluation
 
-Créer un fichier `.env
+Créer un fichier `.env`
