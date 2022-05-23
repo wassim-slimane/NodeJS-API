@@ -27,7 +27,7 @@ class Collection {
     }
     deleteOne(id) {
       if (this.exists(id)) {
-        this.memoryDb.delete(id);
+        delete this.memoryDb.get(id);
       } else {
         throw new Error(`Key ${id} doesn't not exists`);
       }
