@@ -1,9 +1,20 @@
 const express = require('express');
 const Joi = require("joi");
 const app = express();
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+require("dotenv").config();
+if (!process.env.JWT_PRIVATE_KEY) {
+  console.log(
+    "Vous devez créer un fichier .env qui contient la variable JWT_PRIVATE_KEY"
+  );
+  process.exit(1);
+}
 
 const Collection = require("./Collection");
 const Tasks = new Collection("Tasks");
+const Accounts = new Collection("Accounts");
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
@@ -67,5 +78,29 @@ app.delete('/taches/:id', (req, res) => {
         message: "Object deleted"
     });
 })
+
+// INSCRIPTION
+app.post("/signup", async (req, res) => {
+  const payload = req.body;
+  const schema = Joi.object({
+    username: Joi.string().min(3).max(50).required(),
+    email: Joi.string().max(255).required().email(),
+    motdepasse: Joi.string().min(3).max(50).required(),
+  });
+
+  const { value: account, error } = schema.validate(payload);
+  if (error) return res.status(400).send({ erreur: error.details[0].message });
+  const { id, found } = Accounts.findByProperty("email", account.email);
+  if (found) return res.status(400).send("Please signin instead of signup");
+  const salt = await bcrypt.genSalt(10);
+  const passwordHashed = await bcrypt.hash(account.motdepasse, salt);
+  account.motdepasse = passwordHashed;
+
+  Accounts.insertOne(account);
+  res.status(201).json({
+    username: account.username,
+    email: account.email,
+  });
+});
 
 app.listen(3000);
