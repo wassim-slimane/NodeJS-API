@@ -9,8 +9,8 @@ class Collection {
       return { id: this.id++, inserted: obj };
     }
     getOne(id) {
-      if (this.exists(id)) {
-        return this.memoryDb.get(id);
+      if (id in Object.fromEntries(this.memoryDb)) {
+        return this.memoryDb.get(parseInt(id));
       } else {
         throw new Error(`Key ${id} doesn't not exists`);
       }
