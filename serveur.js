@@ -58,4 +58,14 @@ app.put('/taches/:id', (req, res) => {
     });
 })
 
+app.delete('/taches/:id', (req, res) => {
+    let id = req.params.id;
+    
+    Tasks.deleteOne(id);
+    
+    res.status(201).json({
+        message: "Object deleted"
+    });
+})
+
 app.listen(3000);
