@@ -46,6 +46,6 @@ class Collection {
       });
       return result || {};
     }
-  }
+}
   
-  module.exports = Collection;
+module.exports = Collection;
