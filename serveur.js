@@ -34,11 +34,14 @@ app.post('/taches', (req, res) => {
     if (!token) return res.status(401).json({erreur: "Vous devez vous connecter"})
 
     try{
-        jwt.verify(token, process.env.JWT_PRIVATE_KEY)
+        const decoded = jwt.verify(token, process.env.JWT_PRIVATE_KEY)
         const payload = req.body;
+        console.log(decoded);
+        payload.creerPar = decoded.id;
         const schema = Joi.object({
             description: Joi.string().min(3).max(50).required(),
             faite: Joi.boolean().required(),
+            creerPar: Joi.required()
         });
 
         const { value: task, error } = schema.validate(payload);
@@ -54,7 +57,8 @@ app.post('/taches', (req, res) => {
         });
     } catch (exc) {
         res.status(401).json({
-            message: "Impossible de se connecter vous n'êtes pas authentifié"
+            message: "Impossible de se connecter vous n'êtes pas authentifié",
+            exc: exc.message
         })
     }
 });
@@ -95,10 +99,16 @@ app.delete('/taches/:id', (req, res) => {
     if (!token) return res.status(401).json({erreur: "Vous devez vous connecter"})
 
     try{
-        jwt.verify(token, process.env.JWT_PRIVATE_KEY)
+        const decoded = jwt.verify(token, process.env.JWT_PRIVATE_KEY)
         let id = req.params.id;
-        
-        Tasks.deleteOne(id);
+        let task = Accounts.findByProperty("creerPar", decoded.id)
+        if(task.id === id) {
+            Tasks.deleteOne(id);
+        } else {
+            res.status(403).json({
+                message: "Impossible de supprimer car vous ne l'avez pas créé"
+            })
+        }
         
         res.status(201).json({
             message: "Object deleted"
