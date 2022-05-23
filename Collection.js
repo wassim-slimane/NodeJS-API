@@ -9,14 +9,14 @@ class Collection {
       return { id: this.id++, inserted: obj };
     }
     getOne(id) {
-      if (id in Object.fromEntries(this.memoryDb)) {
+      if (this.exists(id)) {
         return this.memoryDb.get(parseInt(id));
       } else {
         throw new Error(`Key ${id} doesn't not exists`);
       }
     }
     exists(id) {
-      return this.memoryDb.has(id);
+      return id in Object.fromEntries(this.memoryDb);
     }
     updateOne(id, obj) {
       if (this.exists(id)) {
