@@ -91,13 +91,23 @@ app.put('/taches/:id', (req, res) => {
 })
 
 app.delete('/taches/:id', (req, res) => {
-    let id = req.params.id;
-    
-    Tasks.deleteOne(id);
-    
-    res.status(201).json({
-        message: "Object deleted"
-    });
+    const token = req.header('x-auth-token');
+    if (!token) return res.status(401).json({erreur: "Vous devez vous connecter"})
+
+    try{
+        jwt.verify(token, process.env.JWT_PRIVATE_KEY)
+        let id = req.params.id;
+        
+        Tasks.deleteOne(id);
+        
+        res.status(201).json({
+            message: "Object deleted"
+        });
+    } catch (exc) {
+        res.status(401).json({
+            message: "Impossible de se connecter vous n'êtes pas authentifié"
+        })
+    }
 })
 
 // INSCRIPTION
